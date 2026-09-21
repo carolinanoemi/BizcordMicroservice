@@ -1,8 +1,12 @@
+using MessagingService.Messaging;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddMessageClient("host=localhost");
 
 var app = builder.Build();
 
