@@ -1,0 +1,38 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: "rabbitmq"
+    ports:
+      # 5672 = the port our app uses to send/receive messages
+      # 15672 = RabbitMQ's web dashboard (http://localhost:15672, login: guest/guest)
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      # This checks if RabbitMQ is actually ready to accept connections,
+      # not just that the container started. Without this, our app might
+      # start before RabbitMQ is ready and crash with "connection refused".
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  messaging-service:
+    build:
+      # Context is the repo root (two folders up) because our Dockerfile
+      # uses paths like "apps/messaging-microservice/src/..."
+      context: ../../
+      dockerfile: apps/messaging-microservice/Dockerfile
+    depends_on:
+      rabbitmq:
+        # Only start our app AFTER the RabbitMQ health check passes
+        condition: service_healthy
+    ports:
+      # Maps port 8080 inside the container to port 5280 on our machine
+      - "5280:8080"
+    environment:
+      # Tell our app where to find RabbitMQ.
+      # Inside Docker, services talk to each other by their service name
+      # ("rabbitmq"), not "localhost" — because each container has its own network.
+      - RABBITMQ_HOST=rabbitmq
+      # Enable Swagger UI
+      - ASPNETCORE_ENVIRONMENT=Development
