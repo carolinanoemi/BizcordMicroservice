@@ -32,7 +32,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Map controller routes (connects the [Route] attributes to actual URLs)
+// Map controller routes (connects the [Route] attributes to actual URLs)) 
 app.MapControllers();
 
 app.Run();
