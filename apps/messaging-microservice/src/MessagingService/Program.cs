@@ -1,45 +1,38 @@
 using MessagingService.Messaging;
-
+using MessagingService.Repositories;
+using MessagingService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// --- Register services for dependency injection ---
+// When a class asks for IMessageRepository, give it the in-memory version
+builder.Services.AddSingleton<IMessageRepository, InMemoryMessageRepository>();
+
+// When a class asks for IMessageService, give it our MessageService
+builder.Services.AddScoped<IMessageService, MessageService>();
+
+// Register our RabbitMQ message client (from the previous task)
 builder.Services.AddMessageClient("host=localhost");
+
+// Register controllers (tells .NET to look for classes with [ApiController])
+builder.Services.AddControllers();
+
+// Register Swagger for API documentation and testing UI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// In development, enable Swagger UI at /swagger so we can test our endpoints visually
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+// Map controller routes (connects the [Route] attributes to actual URLs)
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
