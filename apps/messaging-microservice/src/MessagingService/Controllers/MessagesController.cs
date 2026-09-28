@@ -9,7 +9,7 @@ namespace MessagingService.Controllers;
 /// This is the REST API controller for messages.
 /// It handles HTTP requests (GET, POST, PUT, DELETE) and returns HTTP responses.
 /// It does NOT contain any business logic — it just passes work to the MessageService.
-/// 
+///
 /// The route "api/messages" means all endpoints start with: http://localhost:5280/api/messages
 /// </summary>
 [ApiController]
@@ -33,7 +33,7 @@ public class MessagesController : ControllerBase
     /// Returns 200 OK with the message, or 404 Not Found if it doesn't exist.
     /// </summary>
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetMessage(Guid id)
     {
         var message = await _messageService.GetByIdAsync(id);
         if (message == null)
@@ -43,11 +43,11 @@ public class MessagesController : ControllerBase
         // We don't expose internal fields like IsDeleted or EditedAt to the outside.
         var response = new MessageDto
         {
-            Id = message.Id,
+            MessageId = message.Id,
             ChannelId = message.ChannelId,
-            SenderId = message.SenderId,
+            AuthorId = message.AuthorId,
             Content = message.Content,
-            Timestamp = message.CreatedAt
+            Timestamp = message.PostedAt
         };
 
         return Ok(response); // 200 — here's your message
@@ -66,11 +66,11 @@ public class MessagesController : ControllerBase
         // Convert each internal entity to the shared model
         var response = messages.Select(m => new MessageDto
         {
-            Id = m.Id,
+            MessageId = m.Id,
             ChannelId = m.ChannelId,
-            SenderId = m.SenderId,
+            AuthorId = m.AuthorId,
             Content = m.Content,
-            Timestamp = m.CreatedAt
+            Timestamp = m.PostedAt
         }).ToList();
 
         return Ok(response); // 200 — here's all the messages
@@ -78,27 +78,27 @@ public class MessagesController : ControllerBase
 
     /// <summary>
     /// POST api/messages
-    /// Create a new message. The request body must contain Content, ChannelId, and SenderId.
+    /// Create a new message. The request body must contain Content, ChannelId, and AuthorId.
     /// Returns 201 Created with the new message, or 400 Bad Request if validation fails
     /// (e.g. empty content, missing fields — handled automatically by [Required] annotations on the DTO).
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateMessageRequest request)
+    public async Task<IActionResult> PostMessage([FromBody] CreateMessageRequest request)
     {
         var message = await _messageService.CreateAsync(request);
 
         // Convert to shared model for the response
         var response = new MessageDto
         {
-            Id = message.Id,
+            MessageId = message.Id,
             ChannelId = message.ChannelId,
-            SenderId = message.SenderId,
+            AuthorId = message.AuthorId,
             Content = message.Content,
-            Timestamp = message.CreatedAt
+            Timestamp = message.PostedAt
         };
 
         // 201 Created — includes a Location header pointing to GET api/messages/{id}
-        return CreatedAtAction(nameof(GetById), new { id = message.Id }, response);
+        return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, response);
     }
 
     /// <summary>
@@ -115,11 +115,11 @@ public class MessagesController : ControllerBase
 
         var response = new MessageDto
         {
-            Id = message.Id,
+            MessageId = message.Id,
             ChannelId = message.ChannelId,
-            SenderId = message.SenderId,
+            AuthorId = message.AuthorId,
             Content = message.Content,
-            Timestamp = message.CreatedAt
+            Timestamp = message.PostedAt
         };
 
         return Ok(response); // 200 — here's the updated message

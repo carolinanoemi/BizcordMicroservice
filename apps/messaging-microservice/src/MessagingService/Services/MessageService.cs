@@ -3,12 +3,13 @@ using MessagingService.Domain.Events;
 using MessagingService.DTOs;
 using MessagingService.Messaging;
 using MessagingService.Repositories;
+using Shared.Contracts.Events;
 
 namespace MessagingService.Services;
 
 /// <summary>
 /// This class contains all the business logic for messages.
-/// It sits between the controller (which handles HTTP requests) 
+/// It sits between the controller (which handles HTTP requests)
 /// and the repository (which handles saving/loading data).
 /// It also uses the message client to publish events to RabbitMQ,
 /// so other services like the Notification Service can react.
@@ -51,31 +52,25 @@ public class MessageService : IMessageService
     /// </summary>
     public async Task<Message> CreateAsync(CreateMessageRequest request)
     {
-        // Step 1: Build a Message entity from the incoming request data
-        var message = new Message
-        {
-            Id = Guid.NewGuid(),
-            Content = request.Content,
-            ChannelId = request.ChannelId,
-            SenderId = request.SenderId,
-            CreatedAt = DateTime.UtcNow,
-            IsDeleted = false
-        };
+        // Step 1: Use the Message.Create() factory method to build the entity.
+        // This validates the input (e.g. throws DomainException if content is empty).
+        var message = Message.Create(request.ChannelId, request.AuthorId, request.Content);
 
         // Step 2: Save the message to the database via the repository
         await _repository.AddAsync(message);
 
-        // Step 3: Use the message client to publish a "MessageSent" event to RabbitMQ.
-        // The Notification Service listens for this event and sends push notifications
-        // to users in the channel. Our service doesn't call Notification Service directly —
-        // it just publishes the event, and any service that cares will pick it up.
-        await _messageClient.PublishAsync(new MessageSent
+        // Step 3: Use the message client to publish a "MessagePostedEvent" to RabbitMQ.
+        // This is the SHARED CONTRACT that every other team's service listens for.
+        // The Notification Service uses it to send push notifications.
+        // The Search Service uses it to index the message content.
+        // The Presence Service uses it to update the author's last active timestamp.
+        await _messageClient.PublishAsync(new MessagePostedEvent
         {
             MessageId = message.Id,
             ChannelId = message.ChannelId,
-            SenderId = message.SenderId,
+            AuthorId = message.AuthorId,
             Content = message.Content,
-            SentAt = message.CreatedAt
+            PostedAt = message.PostedAt
         });
 
         return message;
