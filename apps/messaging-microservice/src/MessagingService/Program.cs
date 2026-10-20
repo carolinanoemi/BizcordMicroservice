@@ -18,7 +18,7 @@ builder.Services.AddScoped<IMessageService, MessageService>();
 var rabbitHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "localhost";
 
 // Register our RabbitMQ message client (from the message client task).
-// Uses the host we just read — either "rabbitmq" (Docker) or "localhost" (local).
+// Uses the host we just read   either "rabbitmq" (Docker) or "localhost" (local).
 builder.Services.AddMessageClient($"host={rabbitHost}");
 
 // Register controllers (tells .NET to look for classes with [ApiController])
@@ -43,3 +43,7 @@ app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
+
+// This line makes the Program class visible to the test project,
+// so TestWebApplicationFactory can reference it with WebApplicationFactory<Program>
+public partial class Program { }

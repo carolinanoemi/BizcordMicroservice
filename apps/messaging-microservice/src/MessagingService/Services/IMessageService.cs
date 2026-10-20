@@ -5,7 +5,7 @@ namespace MessagingService.Services;
 
 /// <summary>
 /// Defines the business logic for managing messages.
-/// The controller calls these methods, it never touches the repository directly.
+/// The controller calls these methods — it never touches the repository directly.
 /// </summary>
 public interface IMessageService
 {

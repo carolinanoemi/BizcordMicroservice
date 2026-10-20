@@ -16,7 +16,7 @@ public class InMemoryMessageRepository : IMessageRepository
     {
         var messages = _messages
             .Where(m => m.ChannelId == channelId && !m.IsDeleted)
-            .OrderBy(m => m.CreatedAt)
+            .OrderBy(m => m.PostedAt)
             .ToList();
         return Task.FromResult(messages);
     }
